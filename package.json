@@ -1,0 +1,61 @@
+{
+  "name": "volcengine-tts",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "适用于火山引擎模块，支持火山引擎、微软必应、OpenAI 等 TTS 服务。",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "server": "ts-node src/server.ts",
+    "build": "tsup",
+    "dev": "pnpm build && pnpm start",
+    "release": "tsup --config tsup.config.npm.ts && npm publish",
+    "start": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "node-fetch-native": "^1.6.4",
+    "ts-node": "^10.9.2",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@types/ws": "^8.5.10",
+    "tsup": "^8.1.0",
+    "tsx": "^4.15.5",
+    "typescript": "^5"
+  },
+  "homepage": "https://github.com/layola13/volcengine-tts",
+  "bugs": "https://github.com/layola13/volcengine-tts/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/idootop/volcengine-tts.git"
+  },
+  "keywords": [
+    "tts",
+    "stream",
+    "mi-gpt",
+    "edge-tts",
+    "volcano-tts"
+  ],
+  "author": {
+    "name": "layola",
+    "email": "layola13@gmail.com",
+    "url": "https://github.com/layola13"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "import": "./dist/index.js",
+    "require": "./dist/index.cjs",
+    "default": "./dist/index.js"
+  }
+}

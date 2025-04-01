@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Streaming TTS Player</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 150px;
+        padding: 10px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      button {
+        padding: 10px 15px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      select {
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
+      .status {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .loading {
+        background-color: #fffde7;
+      }
+      .success {
+        background-color: #e8f5e9;
+      }
+      .error {
+        background-color: #ffebee;
+      }
+      audio {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Streaming TTS Player</h1>
+
+      <div>
+        <h3>Enter Text</h3>
+        <textarea
+          id="textInput"
+          placeholder="Enter text to convert to speech..."
+        >
+一九七五年，二三月间，一个平平常常的日子，细蒙蒙的雨丝夹着一星半点的雪花，正纷纷淋淋地向大地飘洒着。</textarea
+        >
+      </div>
+
+      <div class="controls">
+        <select id="speakerSelect">
+          <option value="灿灿">灿灿</option>
+          <option value="梓梓">梓梓</option>
+          <option value="燃燃">燃燃</option>
+          <option value="炀炀">炀炀</option>
+          <option value="擎苍">擎苍</option>
+        </select>
+        <button id="generateBtn">Generate Speech</button>
+        <button id="stopBtn" disabled>Stop</button>
+      </div>
+
+      <div>
+        <h3>Audio Player</h3>
+        <audio id="audioPlayer" controls></audio>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const textInput = document.getElementById("textInput");
+        const speakerSelect = document.getElementById("speakerSelect");
+        const generateBtn = document.getElementById("generateBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const audioPlayer = document.getElementById("audioPlayer");
+        const status = document.getElementById("status");
+
+        // MediaSource support check
+        if (!window.MediaSource) {
+          status.textContent =
+            "Your browser does not support the MediaSource API. Try using Chrome or Firefox.";
+          status.className = "status error";
+          generateBtn.disabled = true;
+          return;
+        }
+
+        let mediaSource;
+        let sourceBuffer;
+        let audioChunks = [];
+        let controller;
+
+        generateBtn.addEventListener("click", async () => {
+          const text = textInput.value.trim();
+          const speaker = speakerSelect.value;
+
+          if (!text) {
+            status.textContent = "Please enter some text";
+            status.className = "status error";
+            return;
+          }
+
+          // Reset previous audio
+          audioPlayer.pause();
+          audioPlayer.src = "";
+          audioChunks = [];
+
+          // Update UI
+          generateBtn.disabled = true;
+          stopBtn.disabled = false;
+          status.textContent = "Generating audio...";
+          status.className = "status loading";
+
+          try {
+            // Create an AbortController to potentially cancel the request
+            controller = new AbortController();
+
+            // Create a direct streaming approach using fetch
+            const response = await fetch("/api/tts", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ text, speaker }),
+              signal: controller.signal,
+            });
+
+            if (!response.ok) {
+              throw new Error(`Server responded with ${response.status}`);
+            }
+
+            // Create a Blob URL from the response for streaming
+            const reader = response.body.getReader();
+            const stream = new ReadableStream({
+              start(controller) {
+                function push() {
+                  reader
+                    .read()
+                    .then(({ done, value }) => {
+                      if (done) {
+                        controller.close();
+                        return;
+                      }
+                      controller.enqueue(value);
+                      push();
+                    })
+                    .catch((err) => {
+                      controller.error(err);
+                    });
+                }
+                push();
+              },
+            });
+
+            // Create a response from the stream
+            const streamResponse = new Response(stream);
+
+            // Get a blob from the response
+            const blob = await streamResponse.blob();
+
+            // Create an object URL for the audio player
+            const url = URL.createObjectURL(blob);
+            audioPlayer.src = url;
+
+            // Clean up when done
+            audioPlayer.onloadedmetadata = () => {
+              status.textContent = "Audio generated successfully!";
+              status.className = "status success";
+              generateBtn.disabled = false;
+              stopBtn.disabled = true;
+              audioPlayer.play();
+            };
+
+            audioPlayer.onerror = (e) => {
+              status.textContent = `Audio playback error: ${
+                e.message || "Unknown error"
+              }`;
+              status.className = "status error";
+              generateBtn.disabled = false;
+              stopBtn.disabled = true;
+            };
+          } catch (error) {
+            if (error.name === "AbortError") {
+              status.textContent = "Request cancelled";
+            } else {
+              status.textContent = `Error: ${error.message || "Unknown error"}`;
+              status.className = "status error";
+            }
+            generateBtn.disabled = false;
+            stopBtn.disabled = true;
+          }
+        });
+
+        stopBtn.addEventListener("click", () => {
+          if (controller) {
+            controller.abort();
+            status.textContent = "Cancelled audio generation";
+            status.className = "status";
+            generateBtn.disabled = false;
+            stopBtn.disabled = true;
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

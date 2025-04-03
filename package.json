@@ -1,6 +1,6 @@
 {
   "name": "volcengine-tts",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "type": "module",
   "license": "MIT",
   "description": "适用于火山引擎模块，支持火山引擎 等 TTS 服务。",

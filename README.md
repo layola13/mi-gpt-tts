@@ -85,3 +85,44 @@ main();
 [MIT](https://github.com/idootop/mi-gpt-tts/blob/main/LICENSE) License © 2024-PRESENT Del Wang
 
 ##新增 大模型语音合成 by layola13
+
+```
+const tts = createTTS({
+  // Your config here...
+  defaultSpeaker: "灿灿",
+  volcano: {
+    // ... volcano config
+  }
+});
+
+// Example filter function to remove text in parentheses
+const filterParentheses = (text) => {
+  return text.replace(/\([^)]*\)/g, '');
+};
+
+// Example audio replacement config
+const specialSoundPatterns = [
+  {
+    pattern: /\[([^\]]+)\]/g,  // Match content in square brackets
+    getAudioPath: (matches) => {
+      // Parse the content like [Ⅱ,Ⅲ,Ⅱ] and return file paths
+      return matches[1].split(',').map(code => {
+        switch(code.trim()) {
+          case 'Ⅱ': return '2.mp3';
+          case 'Ⅲ': return '3.mp3';
+          default: return '1.mp3';
+        }
+      });
+    }
+  }
+];
+
+// Use TTS with the new features
+await tts2({
+  text: "（眼神变得更加暧昧，轻轻一笑）正常读出的文字 [Ⅱ,Ⅲ,Ⅱ] 继续正常读出的文字",
+  speaker: "灿灿",
+  textFilter: filterParentheses,
+  audioReplacements: specialSoundPatterns,
+  audioBasePath: '/path/to/audio/files'
+});
+```

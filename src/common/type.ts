@@ -36,21 +36,30 @@ export type TTSBuilder = (
   }
 ) => Promise<Uint8Array | null>;
 
-export type TTSOptions = TTSConfig & {
+// customTextProcessor 类型定义
+export interface CustomTextProcessorParams {
+  text: string;
+  outputStream: Readable;
+  tts: (options: TTSOptions) => Promise<Uint8Array | null>;
+  options: TTSOptions;
+}
+
+export interface TTSOptions extends TTSConfig {
   stream?: Readable;
   text?: string;
   speaker?: string;
-  protocol?: "default" | "websocket"; // Add protocol option
-  operation?: "submit" | "query"; // Add operation option
-  signal?: AbortSignal; // Add AbortSignal for cancellation
-  // New options
-  textFilter?: (text: string) => string; // Text processing function
-  audioReplacements?: {
-    pattern: RegExp; // Pattern to match in text
-    getAudioPath: (matches: string[]) => string[]; // Function to get audio file paths
-  }[];
-  audioBasePath?: string; // Base path for audio files
-};
+  protocol?: "default" | "websocket";
+  operation?: "submit" | "query";
+  signal?: AbortSignal;
+  textFilter?: (text: string) => string;
+
+  // 完全自定义处理函数
+  customTextProcessor?: (params: CustomTextProcessorParams) => Promise<void>;
+
+  // 保持向后兼容的字段，但不再在库内部使用
+  audioReplacements?: any;
+  audioBasePath?: string;
+}
 
 export interface TTSSpeaker {
   /**

@@ -8,6 +8,7 @@ import {
   TTSSpeaker,
   VolcanoConfig,
 } from "../common/type";
+import { Readable } from "stream";
 
 // 火山引擎 TTS 音色列表：https://www.volcengine.com/docs/6561/97465
 const kVolcanoTTSSpeakers: TTSSpeaker[] = [
@@ -455,7 +456,7 @@ export const volcanoTTS: TTSBuilder = async ({
     payloadBytes,
   ]);
 
-  const streamHandler = createStreamHandler(responseStream);
+  const streamHandler = createStreamHandler(responseStream as Readable);
 
   try {
     const ws = new WebSocket(kAPI, {
@@ -532,6 +533,7 @@ const getVolcanoConfig = (volcano?: VolcanoConfig) => {
   const appid = volcano?.appId;
   const token = volcano?.accessToken;
   const uid = volcano?.userId ?? "666";
+  const encoding = volcano?.encoding ?? "pcm";
   if (!appid || !token) {
     console.log(
       "❌ 找不到火山引擎 TTS 环境变量：VOLCANO_TTS_APP_ID、VOLCANO_TTS_ACCESS_TOKEN"
@@ -548,7 +550,7 @@ const getVolcanoConfig = (volcano?: VolcanoConfig) => {
       uid,
     },
     audio: {
-      encoding: "mp3",
+      encoding
     },
     request: {
       text_type: "plain",

@@ -4,6 +4,7 @@ export interface VolcanoConfig {
   appId: string;
   accessToken: string;
   userId?: string;
+  encoding?: "wav" | "pcm" | "ogg_opus" | "mp3"; // Add audio format option
 }
 
 export interface EdgeConfig {
